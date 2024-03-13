@@ -18,7 +18,7 @@ you must use the <b>LilyGo T-Dongle-S3</b> with this project.<br>
 you will need to add a sd card to the dongle, the sd card slot is in the bottom of the usb port as pictured below, you will need to remove the dummy card and insert a fat32 formatted sd card.<br>
 
 <img src=https://github.com/stooged/WIFI-USB/blob/main/images/dongle2.jpg><br>
-
+<br>
 
 
 ## Libraries
@@ -30,9 +30,9 @@ the project is built using <b><a href=https://github.com/me-no-dev/ESPAsyncWebSe
 
 <br>
 
-if you wish to use the dongle with the lcd screen to display wifi info you will need to add the TFT_eSPI library from my github.<br>
+if you wish to use the dongle with the lcd screen to display wifi info you will need to add the <a href=https://github.com/stooged/TFT_eSPI>TFT_eSPI</a> library from my github.<br><br>
 <a href=https://github.com/stooged/TFT_eSPI>TFT_eSPI</a><br>
-
+<br>
 
 ## Uploading the firmware to the dongle
 
