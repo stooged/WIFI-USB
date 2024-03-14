@@ -4,6 +4,7 @@
 #include "ESPAsyncWebServer.h"
 #include "esp_task_wdt.h"
 #include <ESPmDNS.h>
+#include <DNSServer.h>
 #include "SD_MMC.h"
 #include "driver/sdmmc_host.h"
 #include "driver/sdspi_host.h"
@@ -46,6 +47,7 @@ String WIFI_HOSTNAME = "usb.local";
 
 #include "Pages.h"
 AsyncWebServer server(80);
+DNSServer dnsServer;
 USBMSC dev;
 File upFile;
 //USBCDC USBSerial;
@@ -359,12 +361,27 @@ void startAccessPoint()
   {
     WiFi.softAPConfig(Server_IP, Server_IP, Subnet_Mask);
     WiFi.softAP(AP_SSID.c_str(), AP_PASS.c_str());
+    dnsServer.setTTL(30);
+    dnsServer.setErrorReplyCode(DNSReplyCode::ServerFailure);
+    dnsServer.start(53, "*", Server_IP);
     File ipFile =  SD_MMC.open("/wifi_info.txt", "a");
-    ipFile.println("Access Point SSID: " + AP_SSID + "\r\nWeb Server IP: " + Server_IP.toString() + "\r\n");
+    if (!connectWifi)
+    {  
+      ipFile.println("Access Point SSID: " + AP_SSID + "\r\nWEB Hostname: " + WIFI_HOSTNAME + "\r\nWeb Server IP: " + Server_IP.toString() + "\r\n");
+    }
+    else
+    {
+      ipFile.println("Access Point SSID: " + AP_SSID + "\r\nWeb Server IP: " + Server_IP.toString() + "\r\n");
+    }
     ipFile.close();
 #if USETFT
     tft.print("AP: ");
     tft.println(AP_SSID);
+    if (!connectWifi)
+    {
+      tft.print("Host: ");
+      tft.println(WIFI_HOSTNAME);
+    }
     tft.print("IP: ");
     tft.println(Server_IP.toString());
 #endif
@@ -383,6 +400,15 @@ void connectToWIFI()
     if (WiFi.waitForConnectResult() != WL_CONNECTED)
     {
       //USBSerial.println("Wifi failed to connect");
+      File ipFile =  SD_MMC.open("/wifi_info.txt", "a");
+      ipFile.println("Failed to connect to: " + WIFI_SSID + "\r\n");
+      ipFile.close();
+#if USETFT
+      tft.setTextColor(TFT_RED, TFT_BLACK);          
+      tft.println("Failed to connect to:");
+      tft.setTextColor(TFT_WHITE, TFT_BLACK);  
+      tft.println(WIFI_SSID);
+#endif
     }
     else
     {
@@ -393,7 +419,7 @@ void connectToWIFI()
         mdnsHost.replace(".local", "");
         MDNS.begin(mdnsHost.c_str());
         File ipFile =  SD_MMC.open("/wifi_info.txt", "a");
-        ipFile.println("WIFI Hostname: " + WIFI_HOSTNAME + "\r\nWeb Server IP: " + LAN_IP.toString() + "\r\n");
+        ipFile.println("Web Hostname: " + WIFI_HOSTNAME + "\r\nWeb Server IP: " + LAN_IP.toString() + "\r\n");
         ipFile.close();
 #if USETFT        
         tft.print("Host: ");
@@ -413,16 +439,16 @@ void setup()
   //USBSerial.begin();
   
   pinMode(38, OUTPUT);
-  digitalWrite(38, 1); 
-   
+  digitalWrite(38, HIGH); 
+
 #if USETFT   
   tft.init();
   tft.setRotation(1);
   tft.fillScreen(TFT_BLACK);
   tft.setTextFont(1); //16 col 5 row
-  tft.setTextColor(TFT_GREEN, TFT_BLACK);   
+  tft.setTextColor(TFT_SKYBLUE, TFT_BLACK);   
   tft.setCursor(0, 0, 2);
-  digitalWrite(38, 0);
+  digitalWrite(38, LOW);
 #endif
 
   setup_SD();
@@ -685,17 +711,18 @@ void loop()
   if (millis() >= (tftCnt + 60000) && tftOn){ 
     tftCnt = 0;
     tftOn = false;
-    digitalWrite(38, 1);
+    digitalWrite(38, HIGH);
     return;
   }
   if (digitalRead(0) == LOW){
     if (tftCnt == 0){
        tftCnt = millis();
-       digitalWrite(38, 0);
+       digitalWrite(38, LOW);
        tftOn = true;
     }
   }
 #endif
+  dnsServer.processNextRequest();
 }
 
 #else
